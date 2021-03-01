@@ -1,5 +1,5 @@
 # HackathonBathymetryEstimation
-Autors:
+Authors:
 BURDIN DE SAINT-MARTIN
 CLATRIER, Mathis
 CUNY, Cerise
