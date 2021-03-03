@@ -154,66 +154,64 @@ class ResNet(nn.Module):
     
     def fit(self, train_dataloader, test_dataloader, n_epochs, print_frequency, optimizer=None, criterion=nn.MSELoss()):
         
-        while True:
+#        self.train()
+                
+        if optimizer is None:
+            optimizer = torch.optim.Adam(self.parameters())
         
-            if optimizer is None:
-                optimizer = torch.optim.Adam(self.parameters())
+        train_losses = []
+        test_losses = []
+        
+        for epoch in range(n_epochs):
             
-            train_losses = []
-            test_losses = []
+            timer = time.time()
             
-            for epoch in range(n_epochs):
-                
-                timer = time.time()
-                
-                # Print Epoch
-                print(f"Epoch {epoch + 1}/{n_epochs}")
-                
-                # Training loop
-                for it, batch in enumerate(train_dataloader):
-                            
-                    # Reset gradients
-                    optimizer.zero_grad()
-                    
-                    # Forward propagation through the network
-                    out = self(batch["image"].to(self.device))
-
-                    # Calculate the loss
-                    loss = torch.sqrt(criterion(out, batch["z"].to(self.device)))  # We take square root because RMSE is the competition's metric
-
-                    # Track batch loss
-                    train_losses.append(loss.item())
-
-                    # Backpropagation
-                    loss.backward()
-
-                    # Update the parameters
-                    optimizer.step()
-
-                    #=====Printing part======
-                    if (it+1)%(len(train_dataloader) // print_frequency) == 0:
-                        print(f"Number of batches viewed : {it}")
-                        print(f"Current training loss : {np.mean(train_losses[-len(train_dataloader)//print_frequency:-1])}")
-
-                        # Validation loop
-                        for it, batch in enumerate(test_dataloader):
-
-                            # Forward propagation through the network
-                            out = self(batch["image"].to(self.device))
-
-                            # Calculate the loss
-                            loss = torch.sqrt(criterion(out, batch["z"].to(self.device)))  # We take square root because RMSE is the competition's metric
-
-                            # Track batch loss
-                            test_losses.append(loss.item())
+            # Print Epoch
+            print(f"Epoch {epoch + 1}/{n_epochs}")
             
-                        print(f"Current validation loss : {np.mean(test_losses[-int(len(test_dataloader)*0.8):-1])}")
+            # Training loop
+            for it, batch in enumerate(train_dataloader):
+                        
+                # Reset gradients
+                optimizer.zero_grad()
                 
-                print(f"The epoch took {time.time() - timer: .2f} seconds")
-            if np.mean(train_losses) < 15:
-                break
+                # Forward propagation through the network
+                out = self(batch["image"].to(self.device))
+
+                # Calculate the loss
+                loss = torch.sqrt(criterion(out, batch["z"].to(self.device)))  # We take square root because RMSE is the competition's metric
+
+                # Track batch loss
+                train_losses.append(loss.item())
+
+                # Backpropagation
+                loss.backward()
+
+                # Update the parameters
+                optimizer.step()
+
+                #=====Printing part======
+                if (it+1)%(len(train_dataloader) // print_frequency) == 0:
+                    print(f"Number of batches viewed : {it}")
+                    print(f"Current training loss : {np.mean(train_losses[-len(train_dataloader)//print_frequency:-1])}")
+
+                    # Validation loop
+                    for it, batch in enumerate(test_dataloader):
+
+                        # Forward propagation through the network
+                        out = self(batch["image"].to(self.device))
+
+                        # Calculate the loss
+                        loss = torch.sqrt(criterion(out, batch["z"].to(self.device)))  # We take square root because RMSE is the competition's metric
+
+                        # Track batch loss
+                        test_losses.append(loss.item())
             
-            self.reset()
+                    print(f"Current validation loss : {np.mean(test_losses[-int(len(test_dataloader)*0.8):-1])}")
+            
+            print(f"The epoch took {time.time() - timer: .2f} seconds")
+            
+        return np.mean(test_losses[-(len(test_losses)//10):-1])
             
     def predict(self, dataloader):
         predictions = []
